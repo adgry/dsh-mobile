@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Camera captures are written here and handed to the camera app by content URI. -->
+    <cache-path name="captures" path="captures/" />
+    <!-- Downloaded update APKs, handed to the installer by content URI. -->
+    <cache-path name="updates" path="updates/" />
+</paths>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Cleartext is permitted because every endpoint in this app is typed in by the user: an
+  OpenAI-compatible gateway, a self-hosted model server on the LAN, an update manifest on a home
+  box. Android's default would fail those silently with an opaque error, which is a worse bug than
+  the risk the user already chose by entering an http:// URL.
+
+  The tradeoff is real: over plain HTTP the API key travels unencrypted. Prefer https for anything
+  leaving the local network — the README says so next to the Base URL setting.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

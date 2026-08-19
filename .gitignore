@@ -1,0 +1,21 @@
+*.iml
+.gradle
+/.idea
+.DS_Store
+build/
+captures/
+.externalNativeBuild
+.cxx
+local.properties
+
+# Signing material. Losing keystore/ means published updates can no longer install
+# over an existing app, so back it up somewhere safe — just never here.
+/keystore.properties
+/keystore/
+
+# Credentials baked into a build
+/secrets.properties
+
+# Build artifacts; releases are published by CI, not committed
+/release/
+/app/release/

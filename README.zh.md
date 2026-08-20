@@ -102,7 +102,7 @@ git tag v1.3.1 && git push origin v1.3.1
 
 也可以在 Actions 页面手动运行 `Release APK` 并填版本号。流程跑完会生成一个带 APK 附件的 Release，应用端的「检查更新」随即就能发现它。
 
-首次需要在 **Settings → Secrets and variables → Actions** 添加四个仓库 Secret（只做一次）：
+本仓库的 Secret 已经配好了。**如果你 fork 或换了签名密钥**，在 **Settings → Secrets and variables → Actions** 里补上（只做一次）：
 
 | Secret | 值 |
 | --- | --- |
@@ -112,7 +112,16 @@ git tag v1.3.1 && git push origin v1.3.1
 | `KEY_PASSWORD` | 密钥口令 |
 | `DEFAULT_API_KEY` | 可选：想预填进安装包的网关 Key |
 
-没配 `KEYSTORE_BASE64` 时流程会直接失败并说明原因 —— 这是故意的，免得发出一个装不上去的包。
+没配 `KEYSTORE_BASE64` 时流程会直接失败并说明原因 —— 这是故意的，免得发出一个签名不同、装不上去的包。
+
+也可以用 `gh` 一次性设好，值直接从本地未跟踪的文件里读，不经过屏幕：
+
+```sh
+base64 -i keystore/dsh-release.jks | tr -d '\n' | gh secret set KEYSTORE_BASE64
+grep '^storePassword=' keystore.properties | cut -d= -f2- | tr -d '\n' | gh secret set KEYSTORE_PASSWORD
+grep '^keyAlias='      keystore.properties | cut -d= -f2- | tr -d '\n' | gh secret set KEY_ALIAS
+grep '^keyPassword='   keystore.properties | cut -d= -f2- | tr -d '\n' | gh secret set KEY_PASSWORD
+```
 
 ## 安装
 

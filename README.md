@@ -119,7 +119,8 @@ git tag v1.3.1 && git push origin v1.3.1
 Or run the `Release APK` workflow manually and type the version. The run produces a release with the
 APK attached, which the in-app updater then finds.
 
-One-time setup under **Settings → Secrets and variables → Actions**:
+This repository's secrets are already configured. **If you fork it, or rotate the signing key**,
+set them under **Settings → Secrets and variables → Actions**:
 
 | Secret | Value |
 | --- | --- |
@@ -131,6 +132,15 @@ One-time setup under **Settings → Secrets and variables → Actions**:
 
 Without `KEYSTORE_BASE64` the workflow fails on purpose rather than publishing an APK that cannot
 install over an existing one.
+
+`gh` can set them all without the values ever reaching a terminal:
+
+```sh
+base64 -i keystore/dsh-release.jks | tr -d '\n' | gh secret set KEYSTORE_BASE64
+grep '^storePassword=' keystore.properties | cut -d= -f2- | tr -d '\n' | gh secret set KEYSTORE_PASSWORD
+grep '^keyAlias='      keystore.properties | cut -d= -f2- | tr -d '\n' | gh secret set KEY_ALIAS
+grep '^keyPassword='   keystore.properties | cut -d= -f2- | tr -d '\n' | gh secret set KEY_PASSWORD
+```
 
 ## Install
 

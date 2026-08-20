@@ -36,13 +36,18 @@ jobs:
       - name: Install the SDK pieces this project compiles against
         run: |
           set -euo pipefail
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager --install "cmdline-tools;latest" > /dev/null
-          NEW="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$NEW" --licenses > /dev/null 2>&1 || true
-          "$NEW" --install "platforms;android-37" "build-tools;37.0.0"
-          "$NEW" --list_installed
-
+          # The runner already has cmdline-tools/latest, so installing a newer one lands in
+          # latest-2 and the old sdkmanager stays on PATH — and it only understands SDK XML v3,
+          # which is why it cannot see android-37. Fetch a known-good one to a scratch dir instead.
+          CLT="$RUNNER_TEMP/cmdline-tools"
+          mkdir -p "$CLT"
+          curl -fsSL -o "$RUNNER_TEMP/clt.zip" \
+            https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip
+          unzip -q "$RUNNER_TEMP/clt.zip" -d "$CLT"
+          SDKM="$CLT/cmdline-tools/bin/sdkmanager"
+          yes | "$SDKM" --sdk_root="$ANDROID_HOME" --licenses > /dev/null 2>&1 || true
+          "$SDKM" --sdk_root="$ANDROID_HOME" --install "platforms;android-37" "build-tools;37.0.0"
+          "$SDKM" --sdk_root="$ANDROID_HOME" --list_installed
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Work out the version

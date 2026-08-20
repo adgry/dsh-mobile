@@ -5,6 +5,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -61,12 +62,13 @@ class SettingsStoreMigrationTest {
     }
 
     @Test
-    fun `a legacy file with no endpoint still yields a usable default`() {
+    fun `a legacy file with no endpoint still yields a well-formed default`() {
         val store = storeFor("""{"model":"deepseek-v4-flash","themeMode":"LIGHT"}""")
         val settings = store.current
         assertEquals(1, settings.providers.size)
-        assertTrue(settings.providers.single().isUsable)
+        assertEquals(DEFAULT_BASE_URL, settings.providers.single().baseUrl)
         assertEquals(ThemeMode.LIGHT, settings.themeMode)
+        assertReadyIfKeyBundled(settings)
     }
 
     @Test
@@ -75,14 +77,30 @@ class SettingsStoreMigrationTest {
         assertEquals(1, settings.providers.size)
         assertEquals(DEFAULT_BASE_URL, settings.providers.single().baseUrl)
         assertEquals(DEFAULT_MODEL, settings.model)
-        assertTrue(settings.isConfigured)
+        assertReadyIfKeyBundled(settings)
     }
 
     @Test
     fun `corrupt json falls back instead of crashing`() {
         val settings = storeFor("{not json at all").current
         assertNotNull(settings.activeProvider)
-        assertTrue(settings.isConfigured)
+        assertEquals(DEFAULT_BASE_URL, settings.activeProvider?.baseUrl)
+        assertReadyIfKeyBundled(settings)
+    }
+
+    /**
+     * Whether the shipped default is immediately usable depends on the build: `secrets.properties`
+     * may bake in a gateway key, and CI deliberately builds without one. Asserting "ready to chat"
+     * unconditionally couples the suite to a local secret — which is exactly how these tests passed
+     * on a developer machine and failed in CI. So the structural invariants are checked always, and
+     * readiness only when a key was actually compiled in.
+     */
+    private fun assertReadyIfKeyBundled(settings: AppSettings) {
+        if (DEFAULT_API_KEY.isNotBlank()) {
+            assertTrue("a build with a bundled key should be ready to use", settings.isConfigured)
+        } else {
+            assertFalse("without a bundled key there is nothing to authenticate with", settings.isConfigured)
+        }
     }
 
     @Test

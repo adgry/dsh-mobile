@@ -111,7 +111,7 @@ jobs:
           set -euo pipefail
           NAME="${{ steps.version.outputs.name }}"
           APK="release/dsh-mobile-$NAME.apk"
-          SHA=$(shasum -a 256 "$APK" | awk '{print $1}')
+          SHA=$(sha256sum "$APK" | awk '{print $1}')   # runner is Linux
           # Written to a file so no release note can break this workflow's YAML.
           {
             echo "DSH Mobile v$NAME"

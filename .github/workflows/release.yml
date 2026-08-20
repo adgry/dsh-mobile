@@ -34,13 +34,21 @@ jobs:
       - uses: android-actions/setup-android@v3
 
       - name: Install the SDK pieces this project compiles against
-        run: sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install "cmdline-tools;latest" > /dev/null
+          NEW="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$NEW" --licenses > /dev/null 2>&1 || true
+          "$NEW" --install "platforms;android-37" "build-tools;37.0.0"
+          "$NEW" --list_installed
 
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Work out the version
         id: version
         run: |
+          set -euo pipefail
           if [ "${{ github.event_name }}" = "push" ]; then
             NAME="${GITHUB_REF_NAME#v}"
           else
@@ -63,7 +71,8 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
+          set -euo pipefail
+          if [ -z "${KEYSTORE_BASE64:-}" ]; then
             echo "::error::KEYSTORE_BASE64 is not set. Without the original signing key the"
             echo "::error::published APK cannot install over an existing DSH Mobile install."
             echo "::error::Add the repository secrets described in README.zh.md first."
@@ -89,21 +98,33 @@ jobs:
 
       - name: Confirm it is signed with the expected key
         run: |
+          set -euo pipefail
           APK="release/dsh-mobile-${{ steps.version.outputs.name }}.apk"
           ls -l "$APK"
-          "$ANDROID_HOME"/build-tools/37.0.0/apksigner verify --print-certs "$APK"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "$APK"
 
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           NAME="${{ steps.version.outputs.name }}"
-          gh release create "v$NAME" "release/dsh-mobile-$NAME.apk" \
-            --title "v$NAME" \
-            --notes "DSH Mobile v$NAME
-
-安装包会被应用内的「检查更新」自动发现。首次安装需要在系统里允许本应用安装未知来源应用。" \
-            --latest
+          APK="release/dsh-mobile-$NAME.apk"
+          SHA=$(shasum -a 256 "$APK" | awk '{print $1}')
+          # Written to a file so no release note can break this workflow's YAML.
+          {
+            echo "DSH Mobile v$NAME"
+            echo
+            echo "安装包会被应用内的「检查更新」自动发现：设置 → 更新 → 检查更新。"
+            echo "首次安装需要在系统里允许本应用安装未知来源应用。"
+            echo
+            echo "SHA-256:"
+            echo '```'
+            echo "$SHA"
+            echo '```'
+          } > release-notes.md
+          gh release create "v$NAME" "$APK" --title "v$NAME" --notes-file release-notes.md --latest
 
       - name: Clean up the signing material
         if: always()

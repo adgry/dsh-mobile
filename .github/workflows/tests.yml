@@ -15,7 +15,15 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@v3
-      - run: sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+      - name: Install the SDK pieces this project compiles against
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install "cmdline-tools;latest" > /dev/null
+          NEW="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$NEW" --licenses > /dev/null 2>&1 || true
+          "$NEW" --install "platforms;android-37" "build-tools;37.0.0"
+          "$NEW" --list_installed
       - uses: gradle/actions/setup-gradle@v4
       - run: ./gradlew --no-daemon testDebugUnitTest lintRelease
       - uses: actions/upload-artifact@v4

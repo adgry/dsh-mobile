@@ -27,8 +27,15 @@ import com.dshmobile.app.net.StreamEvent
 import com.dshmobile.app.update.Updater
 import com.dshmobile.app.util.TokenEstimate
 import com.dshmobile.app.util.decodeForUpload
+import com.dshmobile.app.util.isDocx
+import com.dshmobile.app.util.isLegacyOfficeBinary
 import com.dshmobile.app.util.isPdf
+import com.dshmobile.app.util.isPptx
+import com.dshmobile.app.util.isXlsx
+import com.dshmobile.app.util.readDocx
+import com.dshmobile.app.util.readPptx
 import com.dshmobile.app.util.readTextDocument
+import com.dshmobile.app.util.readXlsx
 import com.dshmobile.app.util.renderPdfPages
 import com.dshmobile.app.util.formatTimestamp
 import com.dshmobile.app.util.toDataUrl
@@ -469,10 +476,24 @@ class ChatViewModel(
                 return@launch
             }
 
-            val document = readTextDocument(appContext, uri)
+            // Office formats are a zip of XML, so they are read directly rather than rejected.
+            val document = when {
+                isDocx(appContext, uri) -> readDocx(appContext, uri)
+                isXlsx(appContext, uri) -> readXlsx(appContext, uri)
+                isPptx(appContext, uri) -> readPptx(appContext, uri)
+                else -> readTextDocument(appContext, uri)
+            }
             if (document == null) {
                 _state.update { it.copy(attaching = false) }
-                notify("这个格式读不出文本，可以试试图片或纯文本文件")
+                notify(
+                    when {
+                        isDocx(appContext, uri) -> "这个 Word 文档读不出文字，可能是扫描件——试试导出成 PDF"
+                        isXlsx(appContext, uri) -> "这个表格读不出内容，可能是空表或只有图表"
+                        isPptx(appContext, uri) -> "这些幻灯片里没有文字，试试导出成 PDF 让模型看图"
+                        isLegacyOfficeBinary(appContext, uri) -> "旧版 .doc/.xls/.ppt 读不出来，另存为 .docx/.xlsx/.pptx 或 PDF 再传"
+                        else -> "这个格式读不出文本，可以试试图片或纯文本文件"
+                    },
+                )
                 return@launch
             }
             val attachment = store.writeDocument(

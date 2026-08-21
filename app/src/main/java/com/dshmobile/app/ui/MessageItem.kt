@@ -72,6 +72,7 @@ fun MessageItem(
     onDelete: () -> Unit,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
+    onPreviewHtml: ((String) -> Unit)? = null,
 ) {
     when (message.role) {
         Role.USER -> UserMessage(
@@ -91,6 +92,7 @@ fun MessageItem(
             onDelete = onDelete,
             onContinue = onContinue,
             modifier = modifier,
+            onPreviewHtml = onPreviewHtml,
         )
     }
 }
@@ -202,6 +204,7 @@ private fun AssistantMessage(
     onDelete: () -> Unit,
     onContinue: () -> Unit,
     modifier: Modifier = Modifier,
+    onPreviewHtml: ((String) -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val hasBody = message.content.isNotBlank()
@@ -236,6 +239,7 @@ private fun AssistantMessage(
                     markdown = message.content,
                     color = scheme.onSurface,
                     onCopyCode = onCopy,
+                    onPreviewHtml = onPreviewHtml,
                 )
             }
         }

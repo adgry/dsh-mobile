@@ -123,6 +123,7 @@ fun ChatScreen(
     var showOverflow by remember { mutableStateOf(false) }
     var editPrompt by remember { mutableStateOf(false) }
     var captureUri by remember { mutableStateOf<Uri?>(null) }
+    var previewHtml by remember { mutableStateOf<String?>(null) }
 
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         uri?.let { viewModel.attachImage(it) }
@@ -478,6 +479,7 @@ fun ChatScreen(
                                 onEdit = { editTarget = message },
                                 onDelete = { viewModel.deleteMessage(message.id) },
                                 onContinue = viewModel::continueLast,
+                                onPreviewHtml = { html -> previewHtml = html },
                             )
                         }
                         item(key = "tail") { Spacer(Modifier.height(6.dp)) }
@@ -578,6 +580,10 @@ fun ChatScreen(
             },
             onDismiss = { renameTarget = null },
         )
+    }
+
+    previewHtml?.let { html ->
+        HtmlPreviewDialog(html = html, onDismiss = { previewHtml = null })
     }
 
     deleteTarget?.let { target ->

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.CheckBox
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.dshmobile.app.util.isPreviewableHtml
 import androidx.compose.ui.unit.sp
 import com.dshmobile.app.ui.components.SmallIconButton
 import com.dshmobile.app.ui.theme.MonoFamily
@@ -55,6 +57,7 @@ fun MarkdownText(
     style: TextStyle = MaterialTheme.typography.bodyLarge,
     color: Color = MaterialTheme.colorScheme.onSurface,
     onCopyCode: (String) -> Unit = {},
+    onPreviewHtml: ((String) -> Unit)? = null,
 ) {
     if (markdown.length > MAX_MARKDOWN_CHARS) {
         Text(text = markdown, style = style, color = color, modifier = modifier)
@@ -67,6 +70,7 @@ fun MarkdownText(
         style = style,
         color = color,
         onCopyCode = onCopyCode,
+        onPreviewHtml = onPreviewHtml,
     )
 }
 
@@ -77,10 +81,17 @@ private fun MdBlockList(
     style: TextStyle,
     color: Color,
     onCopyCode: (String) -> Unit,
+    onPreviewHtml: ((String) -> Unit)? = null,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         blocks.forEach { block ->
-            MdBlockView(block = block, style = style, color = color, onCopyCode = onCopyCode)
+            MdBlockView(
+                block = block,
+                style = style,
+                color = color,
+                onCopyCode = onCopyCode,
+                onPreviewHtml = onPreviewHtml,
+            )
         }
     }
 }
@@ -91,6 +102,7 @@ private fun MdBlockView(
     style: TextStyle,
     color: Color,
     onCopyCode: (String) -> Unit,
+    onPreviewHtml: ((String) -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val inline = InlineStyles(
@@ -130,6 +142,7 @@ private fun MdBlockView(
             language = block.language,
             streaming = !block.closed,
             onCopy = onCopyCode,
+            onPreview = onPreviewHtml,
         )
 
         is MdBlock.Quote -> Row(
@@ -150,6 +163,7 @@ private fun MdBlockView(
                 style = style,
                 color = color.copy(alpha = 0.85f),
                 onCopyCode = onCopyCode,
+                onPreviewHtml = onPreviewHtml,
             )
         }
 
@@ -202,6 +216,7 @@ private fun MdBlockView(
                         style = style,
                         color = color,
                         onCopyCode = onCopyCode,
+                        onPreviewHtml = onPreviewHtml,
                     )
                 }
             }
@@ -315,6 +330,7 @@ fun CodeBlockCard(
     streaming: Boolean,
     onCopy: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onPreview: ((String) -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     val colors = remember(scheme) {
@@ -362,6 +378,15 @@ fun CodeBlockCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = scheme.primary,
                     modifier = Modifier.padding(end = 6.dp),
+                )
+            }
+            // Only offered once the fence has closed: half a page renders as a broken page.
+            if (onPreview != null && !streaming && isPreviewableHtml(language, code)) {
+                SmallIconButton(
+                    icon = Icons.Outlined.PlayArrow,
+                    contentDescription = "预览页面",
+                    tint = scheme.primary,
+                    onClick = { onPreview(code) },
                 )
             }
             SmallIconButton(

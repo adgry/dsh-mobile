@@ -68,7 +68,7 @@ fun AttachSheet(
             AttachRow(
                 icon = Icons.Outlined.Description,
                 title = "文件",
-                subtitle = "代码、日志、Markdown、CSV、JSON…；PDF 会按页转成图片",
+                subtitle = "代码、日志、Markdown、CSV、Word / Excel / PPT…；PDF 会按页转成图片",
                 onClick = onPickFile,
             )
             Spacer(Modifier.height(8.dp))

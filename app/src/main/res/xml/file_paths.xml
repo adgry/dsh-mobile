@@ -4,4 +4,6 @@
     <cache-path name="captures" path="captures/" />
     <!-- Downloaded update APKs, handed to the installer by content URI. -->
     <cache-path name="updates" path="updates/" />
+    <!-- Previewed pages, handed to a browser or the share sheet by content URI. -->
+    <cache-path name="html" path="html/" />
 </paths>

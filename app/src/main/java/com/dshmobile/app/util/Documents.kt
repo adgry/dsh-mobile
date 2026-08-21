@@ -20,7 +20,7 @@ class DocumentText(
 )
 
 /** Roughly 60k tokens of Chinese, or 240k of English — plenty of file, bounded memory. */
-private const val MAX_DOCUMENT_CHARS = 60_000
+internal const val MAX_DOCUMENT_CHARS = 60_000
 
 /** Only the first slice is examined to decide whether a file is text at all. */
 private const val SNIFF_BYTES = 4_096
@@ -35,7 +35,7 @@ private const val SNIFF_BYTES = 4_096
  */
 suspend fun readTextDocument(context: Context, uri: Uri): DocumentText? = withContext(Dispatchers.IO) {
     runCatching {
-        val name = queryName(context, uri)
+        val name = documentName(context, uri)
         val mime = context.contentResolver.getType(uri).orEmpty()
         if (looksBinary(mime, name)) return@runCatching null
 
@@ -84,7 +84,7 @@ suspend fun renderPdfPages(
     targetWidth: Int = 1240,
 ): List<DecodedImage> = withContext(Dispatchers.IO) {
     runCatching {
-        val name = queryName(context, uri)
+        val name = documentName(context, uri)
         context.contentResolver.openFileDescriptor(uri, "r")?.use { descriptor ->
             renderPages(descriptor, name, maxPages, targetWidth)
         }.orEmpty()
@@ -127,7 +127,7 @@ private fun renderPages(
 fun isPdf(context: Context, uri: Uri): Boolean {
     val mime = context.contentResolver.getType(uri).orEmpty()
     if (mime.equals("application/pdf", ignoreCase = true)) return true
-    return queryName(context, uri).endsWith(".pdf", ignoreCase = true)
+    return documentName(context, uri).endsWith(".pdf", ignoreCase = true)
 }
 
 private val BINARY_EXTENSIONS = setOf(
@@ -153,10 +153,3 @@ private fun looksBinary(mimeType: String, name: String): Boolean {
     return mime.startsWith("image/") || mime.startsWith("audio/") || mime.startsWith("video/") ||
         mime.startsWith("application/")
 }
-
-private fun queryName(context: Context, uri: Uri): String =
-    runCatching {
-        context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
-            ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
-    }.getOrNull().orEmpty().ifBlank { uri.lastPathSegment?.substringAfterLast('/').orEmpty() }
-        .ifBlank { "文件" }
